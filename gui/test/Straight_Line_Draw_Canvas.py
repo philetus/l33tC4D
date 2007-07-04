@@ -1,5 +1,5 @@
-from l33tgui.Gui import Gui
-from l33tgui.Canvas import Canvas
+from l33tC4D.gui.Gui import Gui
+from l33tC4D.gui.Canvas import Canvas
 
 class Straight_Line_Draw_Canvas( Canvas ):
     """A simple line drawing application to test l33tgui canvas library

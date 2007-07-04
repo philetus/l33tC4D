@@ -1,5 +1,5 @@
-from l33tgui.Gui import Gui
-from l33tgui.Canvas import Canvas
+from l33tC4D.gui.Gui import Gui
+from l33tC4D.gui.Canvas import Canvas
 
 from math import sqrt
 

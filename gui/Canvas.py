@@ -29,11 +29,11 @@ class Canvas( Window ):
         super( Canvas, self ).__init__( gui=gui )
         
         # set up drawing area widget
-        gtk.threads_enter()
+        gtk_thread = self.GTK_Thread( self )
         try:
             self._init_drawing_area()
         finally:
-            gtk.threads_leave()
+            gtk_thread.leave()
             
         # set default window title and size
         self.title = "l33tgui: canvas"
@@ -42,7 +42,11 @@ class Canvas( Window ):
     def redraw( self ):
         """manually trigger a canvas redraw event
         """
-        self._drawing_area.queue_draw()
+        gtk_thread = self.GTK_Thread( self )
+        try:
+            self._drawing_area.queue_draw()
+        finally:
+            gtk_thread.leave()
 
     def handle_draw( self, brush ):
         """called to draw canvas contents with brush
@@ -75,37 +79,63 @@ class Canvas( Window ):
     ###
 
     def _on_expose( self, drawing, event ):
-        # get a new cairo context from the drawing area
-        context = self._drawing_area.window.cairo_create()
-        
-        # set a clip region for the expose event
-        context.rectangle( event.area.x, event.area.y,
-                                event.area.width, event.area.height)
-        context.clip()
+        gtk_thread = self.GTK_Thread( self, mark=True )
+        try:
+            # get a new cairo context from the drawing area
+            context = self._drawing_area.window.cairo_create()
+            
+            # set a clip region for the expose event
+            context.rectangle( event.area.x, event.area.y,
+                                    event.area.width, event.area.height)
+            context.clip()
 
-        # call draw handler to draw contents of canvas to cairo context
-        self.handle_draw( Brush(context, self.size) )
+            # call draw handler to draw contents of canvas to cairo context
+            self.handle_draw( Brush(context, self.size) )
+
+        finally:
+            gtk_thread.leave()
 
         return False
 
     def _on_configure( self, drawing, event ):
-        self.handle_resize()
+        gtk_thread = self.GTK_Thread( self, mark=True )
+        try:
+            self.handle_resize()
+        finally:
+            gtk_thread.leave()
 
     def _on_motion( self, drawing_area, event ):
-        self.handle_motion( event.x, event.y )
+        gtk_thread = self.GTK_Thread( self, mark=True )
+        try:
+            self.handle_motion( event.x, event.y )
+        finally:
+            gtk_thread.leave()
 
     def _on_press( self, drawing_area, event ):
-        self.handle_press( event.x, event.y )
+        gtk_thread = self.GTK_Thread( self, mark=True )
+        try:
+            self.handle_press( event.x, event.y )
+        finally:
+            gtk_thread.leave()
 
     def _on_release( self, drawing_area, event ):
-        self.handle_release( event.x, event.y )
+        gtk_thread = self.GTK_Thread( self, mark=True )
+        try:
+            self.handle_release( event.x, event.y )
+        finally:
+            gtk_thread.leave()
 
     ###
     ### private getter and setter methods for canvas properties
     ###
 
     def _get_size( self ):
-        rect = self._drawing_area.get_allocation()
+        gtk_thread = self.GTK_Thread( self )
+        try:
+            rect = self._drawing_area.get_allocation()
+        finally:
+            gtk_thread.leave()
+
         return rect.width, rect.height
 
     ###

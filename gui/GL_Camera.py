@@ -18,22 +18,31 @@ class GL_Camera( Window ):
 
         #print "init 0.1"
 
+        # for rotating view
+        self.rotation = [ 0, 0, 0 ]
+
+        # flag to track pointer up or down
+        self.pointer_down = False
+
         # eye position and focus
         self.eye = ( 0.0, 0.0, -6.0 )
         self.focus = ( 0.0, 0.0, 3.0,
                        0.0, 0.0, 0.0,
                        0.0, 1.0, 0.0 )
 
+        # near, far clipping planes
+        self.clip = ( 50, 5000 )
+
         # gl context and gl drawable
         self._gl_context = gl_context
         self._gl_drawable = None
-        
+
         # create new gl drawing area and add it to window
-        gtk.threads_enter()
+        gtk_thread = self.GTK_Thread( self )
         try:
             self._init_gl_area()
         finally:
-            gtk.threads_leave()
+            gtk_thread.leave()
 
         #print "init 0.2"
         
@@ -48,11 +57,11 @@ class GL_Camera( Window ):
     def redraw( self ):
         """manually trigger a canvas redraw event
         """
-        gtk.threads_enter()
+        gtk_thread = self.GTK_Thread( self )
         try:
             self._gl_area.queue_draw()
         finally:
-            gtk.threads_leave()
+           gtk_thread.leave()
 
     def handle_init_gl( self ):
         """
@@ -95,8 +104,14 @@ class GL_Camera( Window ):
 
     def handle_motion( self, x, y ):
         """do something when mouse pointer is moved
+
+           by default rotates view in x-y, override to change
         """
-        pass
+        if self.pointer_down:
+            self.rotation[0] = x
+            self.rotation[1] = y
+            self.redraw()
+            #self._gl_area.queue_draw()
 
     def handle_press( self, x, y ):
         """do something when pointer button is pressed
@@ -113,88 +128,119 @@ class GL_Camera( Window ):
     ###
 
     def _on_realize( self, gl_area ):
-        #print "on realize 0"
-
-        # call gl begin or die trying
-        self._gl_begin()
+        gtk_thread = self.GTK_Thread( self, mark=True )
         try:
+            #print "on realize 0"
 
-            # call gl init handler
-            self.handle_init_gl()
+            # call gl begin or die trying
+            self._gl_begin()
+            try:
 
-        # call gl end
+                # call gl init handler
+                self.handle_init_gl()
+
+            # call gl end
+            finally:
+                self._gl_drawable.gl_end()
+
+                #print "on realize 1"
+
         finally:
-            self._gl_drawable.gl_end()
-
-            #print "on realize 1"
+            gtk_thread.leave()
 
         
     def _on_expose( self, gl_area, event ):
-        #print "on expose 0"
-        
-        # call gl begin or die trying
-        self._gl_begin()            
+        gtk_thread = self.GTK_Thread( self, mark=True )
         try:
+            #print "on expose 0"
             
-            # ???
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-
-            # call draw handler to draw world
-            self.handle_draw()
-
-            # set view
-            self._set_view()
-
-            # swap or flush buffer
-            if self._gl_drawable.is_double_buffered():
-                self._gl_drawable.swap_buffers()
-            else:
-                glFlush()
+            # call gl begin or die trying
+            self._gl_begin()            
+            try:
                 
-        # call gl end
-        finally:
-            self._gl_drawable.gl_end()
+                # ???
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-            #print "on expose 1"
+                # Set up the model view matrix
+                glMatrixMode( GL_MODELVIEW )
+                glLoadIdentity()
+                gluLookAt( *self.focus )
+                glTranslatef( *self.eye )
+                glRotatef( self.rotation[0], 0.0, 1.0, 0.0 )
+                glRotatef( self.rotation[1], 1.0, 0.0, 0.0 )
+                glRotatef( self.rotation[2], 0.0, 0.0, 1.0 )
+
+                # call draw handler to draw world
+                self.handle_draw()
+
+                # set view
+                self._set_view()
+
+                # swap or flush buffer
+                if self._gl_drawable.is_double_buffered():
+                    self._gl_drawable.swap_buffers()
+                else:
+                    glFlush()
+                    
+            # call gl end
+            finally:
+                gtk_thread.leave()
+
+        finally:
+            self.in_gtk_thread = False
 
         return True
 
     def _on_configure( self, gl_area, event ):
-        #print "on configure 0"
-        
-
-        #print "on configure 0.1"
-        
-        # call gl begin or die trying
-        self._gl_begin()
+        gtk_thread = self.GTK_Thread( self, mark=True )
         try:
-
-            # resize gl viewport to fill camera window
-            width, height = self.size
-            glViewport(0, 0, width, height)
-
-            self._set_view()
-
-            # call resize handler
-            self.handle_resize()
+            #print "on configure 0"
+            #print "on configure 0.1"
             
-        # OpenGL end
+            # call gl begin or die trying
+            self._gl_begin()
+            try:
+
+                # resize gl viewport to fill camera window
+                width, height = self.size
+                glViewport(0, 0, width, height)
+
+                self._set_view()
+
+                # call resize handler
+                self.handle_resize()
+                
+            # OpenGL end
+            finally:
+                self._gl_drawable.gl_end()
+
         finally:
-            self._gl_drawable.gl_end()
-
-
-        #print "on configure 1"
-
+            gtk_thread.leave()
+            
         return True
 
     def _on_motion( self, drawing_area, event ):
-        self.handle_motion( event.x, event.y )
+        gtk_thread = self.GTK_Thread( self, mark=True )
+        try:
+            self.handle_motion( event.x, event.y )
+        finally:
+            gtk_thread.leave()
 
     def _on_press( self, drawing_area, event ):
-        self.handle_press( event.x, event.y )
+        gtk_thread = self.GTK_Thread( self, mark=True )
+        try:
+            self.pointer_down = True
+            self.handle_press( event.x, event.y )
+        finally:
+            gtk_thread.leave()
 
     def _on_release( self, drawing_area, event ):
-        self.handle_release( event.x, event.y )
+        gtk_thread = self.GTK_Thread( self, mark=True )
+        try:
+            self.pointer_down = False
+            self.handle_release( event.x, event.y )
+        finally:
+            gtk_thread.leave()
 
     ###
     ### private getter and setter methods for properties
@@ -256,15 +302,15 @@ class GL_Camera( Window ):
 
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
-        if width > height:
-            w = float(width) / float(height)
-            glFrustum(-w, w, -1.0, 1.0, 5.0, 60.0)
-        else:
-            h = float(height) / float(width)
-            glFrustum(-1.0, 1.0, -h, h, 5.0, 60.0)
 
-        glMatrixMode(GL_MODELVIEW)
-        glLoadIdentity()
-        gluLookAt( *self.focus )
-        glTranslatef( *self.eye )
+        # calculate left/right and top/bottom clipping planes based the
+        # smallest square viewport
+        a = 9.0 / min( width, height )
+        clipping_planes = ( a*width, a*height )
+        
+        # setup the projection
+        glFrustum(-clipping_planes[0], clipping_planes[0],
+                  -clipping_planes[1], clipping_planes[1],
+                  self.clip[0], self.clip[1] )
+
     

@@ -1,7 +1,7 @@
 from OpenGL.GLUT import glutSolidTeapot, glutSolidSphere
 
-from l33tgui.Gui import Gui
-from l33tgui.GL_Camera import GL_Camera
+from l33tC4D.gui.Gui import Gui
+from l33tC4D.gui.GL_Camera import GL_Camera
 
 class Teapot_Camera( GL_Camera ):
     """test app opens two gl camera windows and draws to them

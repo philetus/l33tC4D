@@ -3,7 +3,7 @@ from OpenGL.GL import( glGenLists, glNewList, glEndList, glCallList,
                        glBegin, glEnd, glNormal3f, glVertex3f, glMaterialfv,
                        GL_COMPILE, GL_TRIANGLES, GL_FRONT, GL_SPECULAR,
                        GL_SHININESS, GL_DIFFUSE )
-from Numeric import zeros
+from numpy import zeros
 
 class STL_Mesh( object ):
     """loads triangle mesh from an stl file and draws it with opengl calls

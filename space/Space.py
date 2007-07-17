@@ -1,3 +1,5 @@
+from Vertex import Vertex
+
 class Space( object ):
     """node in an octree covering an area of 3d space
 
@@ -6,7 +8,7 @@ class Space( object ):
     """
 
     def __init__( self, parent=None, centroid=(0.0, 0.0, 0.0), size=2.0**10 ):
-        self.centroid = centroid
+        self.centroid = Vertex( *centroid )
         self.size = size
 
         # parent space node
@@ -20,7 +22,7 @@ class Space( object ):
 
     def __repr__( self ):
         return "<space x=%.2f y=%.2f z=%.2f size=%.2f/>" % (
-            self.centroid + (self.size,) )
+            tuple(self.centroid) + (self.size,) )
 
     def print_tree( self, _indent=0 ):
         print "  " * _indent + "*" + str(self)
@@ -30,7 +32,7 @@ class Space( object ):
             for space in self.children:
                 space.print_tree( _indent=_indent+1 )
 
-    def insert( self, zone, limit=1.0 ):
+    def insert( self, zone, limit=2.0**1 ):
         """insert a new zone into octree
 
            will descend tree until smallest containing space node is reached
@@ -52,7 +54,7 @@ class Space( object ):
                 # if this is not first child space zone intersects, the
                 # current space is the smallest containing space node
                 if child is not None:
-                    self.zones.add( zone )
+                    self._add_zone( zone )
                     return
                 
                 child = space
@@ -63,8 +65,27 @@ class Space( object ):
             return
 
         # if size limit has been reached just add zone to this space
+        self._add_zone( zone )
+
+    def _add_zone( self, zone ):
+        """private method to manage adding zone to space node
+        """
+        assert zone.space is None
+        zone.space = self
         self.zones.add( zone )
-            
+
+    def remove( self, zone ):
+        """remove given zone from space octree
+        """
+        if zone.space is None:
+            raise KeyError( "zone not in space octree!" )
+
+        # remove zone from space node's contained set
+        zone.space.zones.remove( zone )
+
+        # set zone's containing space to none
+        zone.space = None
+        
     def interfere( self, zone, limit=1.0, _baggage=set() ):
         """returns zones kissing and intersecting given zone down to size limit
 
@@ -131,8 +152,9 @@ class Space( object ):
             return kisses, intersects
 
         # otherwise size limit has been reached, add any forward baggage and
-        # zones contained by this space to kissing set and return
-        kisses |= self.zones | forward_baggage
+        # zones contained by this space and its children to kissing set
+        # and return
+        kisses |= self.zones | self.get_child_zones() | forward_baggage
         return kisses, intersects
         
 
@@ -142,8 +164,9 @@ class Space( object ):
            does *not* include zones contained by this space
         """
         zones = set()
-        for space in self.children:
-            zones |= space.get_child_zones()
+        if self.children is not None:
+            for space in self.children:
+                zones |= space.zones | space.get_child_zones()
         return zones
 
     def spawn( self ):
@@ -161,9 +184,8 @@ class Space( object ):
         for z in [-1, 1]:
             for y in [-1, 1]:
                 for x in [-1, 1]:
-                    centroid = ( self.centroid[0] + (x * radius),
-                                 self.centroid[1] + (y * radius),
-                                 self.centroid[2] + (z * radius) )
+                    delta = Vertex( *[a * radius for a in x, y, z] )
+                    centroid = self.centroid + delta
                     space = Space( parent=self, centroid=centroid, size=size )
                     self.children.append( space )
                         

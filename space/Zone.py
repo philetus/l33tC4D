@@ -15,6 +15,9 @@ class Zone( object ):
         # hovered flag indicates if zone is under pointer
         self.hovered = False
 
+        # containing space node
+        self.space = None
+
     def interfere( self, space ):
         """determines if this zone intersects or contains given space
 
@@ -52,14 +55,21 @@ class Zone( object ):
 
     def bounds_intersect_space( self, space ):
         """returns true if this zone's bounding box intersects given space
+
+           intersection is inclusive on minimum edge of bounds and exclusive
+           on maximum edge of bounds
         """
         radius = space.size / 2.0
+        min_bound, max_bound = self.bounds
 
-        # if max space coord is less than min bound or min space coord is
-        # greater than max bound return false
-        for d, vertex in zip( [-1, 1], self.bounds ):
-            for coord, bound in zip( space.centroid, vertex ):
-                if (bound - (coord - (radius * d))) * d < 0:
-                    return False
+        # if max space coord is less than min bound return false
+        for coord, bound in zip( space.centroid, min_bound ):
+            if coord + radius < bound:
+                 return False
+                
+        # if min space coord is greater than or equal to max bound return false
+        for coord, bound in zip( space.centroid, max_bound ):
+            if coord - radius >= bound:
+                return False
 
         return True

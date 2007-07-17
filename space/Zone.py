@@ -73,3 +73,34 @@ class Zone( object ):
                 return False
 
         return True
+
+    def draw( self ):
+        """draw this zone to opengl
+        """
+        pass
+
+    def select( self ):
+        """set this zone to selected
+        """
+        assert self.selected is False
+        self.selected = True
+
+        # call selection hook
+        self.handle_select()
+
+    def deselect( self ):
+        """set this zone to deselected
+        """
+        assert self.selected is True
+        self.selected = False
+
+        # call deselection hook
+        self.handle_deselect()
+
+    def handle_select( self ):
+        """do something when selected
+        """
+
+    def handle_deselect( self ):
+        """do something when deselected
+        """

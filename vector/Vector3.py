@@ -45,7 +45,9 @@ class Vector3( VectorX ):
         coords.resize( 4 )
 
         # multiply vector with matrix
-        coords = matrix * coords
+        #print "coords:", coords, "matrix:", matrix
+        #WTF??? coords =  matrix * coords
+        coords = coords * matrix
 
         # return new vector with rotated coords
         return self.__class__( *tuple(coords.flat)[:3] )

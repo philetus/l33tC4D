@@ -32,8 +32,8 @@ def roll( angle ):
     s = sin( angle )
     return matrix(
         [[1, 0, 0, 0],
-         [0, c, s, 0],
-         [0, -s, c, 0],
+         [0, c, -s, 0],
+         [0, s, c, 0],
          [0, 0, 0, 1]],
         'd' )
 
@@ -44,9 +44,9 @@ def pitch( angle ):
     c = cos( angle )
     s = sin( angle )
     return matrix(
-        [[c, 0, -s, 0],
+        [[c, 0, s, 0],
          [0, 1, 0, 0],
-         [s, 0, c, 0],
+         [-s, 0, c, 0],
          [0, 0, 0, 1]],
         'd' )
 
@@ -57,8 +57,8 @@ def yaw( angle ):
     c = cos( angle )
     s = sin( angle )
     return matrix(
-        [[c, s, 0, 0],
-         [-s, c, 0, 0],
+        [[c, -s, 0, 0],
+         [s, c, 0, 0],
          [0, 0, 1, 0],
          [0, 0, 0, 1]],
         'd' )

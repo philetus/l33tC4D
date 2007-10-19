@@ -11,18 +11,19 @@ class VectorX( object ):
 
     def __iter__( self ):
         for coord in self._coords:
-            yield coord
+            yield coord.item()
 
     def __getitem__( self, index ):
-        return self._coords[index]
+        return self._coords[index,0]
 
     def __setitem__( self, index, value ):
-        self._coords[index] = float( value )
+        self._coords[index,0] = value
 
     def add( self, vector ):
         """add given vector to this vector and return as new vector
         """
-        return self.__class__( *numpy.add(self._coords, vector._coords) )
+        return self.__class__( *(c.item() for c in
+                                 numpy.add(self._coords, vector._coords)[:3]) )
 
     def __add__( self, vector ):
         """a + b <==> a.add( b )
@@ -32,7 +33,9 @@ class VectorX( object ):
     def subtract( self, vector ):
         """subtract given vector from this vector and return as new vector
         """
-        return self.__class__( *numpy.subtract(self._coords, vector._coords) )
+        return self.__class__( *(c.item() for c in
+                                 numpy.subtract(self._coords,
+                                                vector._coords)[:3]) )
 
     def __sub__( self, vector ):
         """a - b <==> a.subtract( b )
@@ -42,27 +45,20 @@ class VectorX( object ):
     def dot( self, vector ):
         """returns scalar dot product of this vector and given vector
         """
-        return numpy.dot( self._coords, vector._coords )
+        return numpy.dot( self._coords.transpose(), vector._coords )
 
     def cross( self, vector ):
         """cross this vector with given vector and return as new vector
         """
-        return self.__class__( *numpy.cross(self._coords, vector._coords) )
+        return self.__class__( *numpy.cross(self._coords.A1[:3],
+                                            vector._coords.A1[:3]) )
 
     def multiply( self, scalar ):
         """multiply this vector by given scalar and return as new vector
         """
-        return self.__class__( *(self._coords * float(scalar)) )
-
-    def __mul__( self, scalar ):
-        """a * n <==> a.multiply( n )
-        """
-        return self.multiply( scalar )
-
-    def __rmul__( self, scalar ):
-        """n * a <==> a.multiply( n )
-        """
-        return self.multiply( scalar )
+        return self.__class__( *(c.item() for c in
+                                 numpy.multiply(self._coords,
+                                                float(scalar))[:3]) )
 
     def divide( self, scalar ):
         """divide this vector by given scalar and return as new vector
@@ -70,13 +66,10 @@ class VectorX( object ):
         # check we aren't dividing by 0
         if scalar == 0.0:
             raise ZeroDivisionError( "attempted to divide vector by 0!" )
-        return self.__class__( *(self._coords / float(scalar)) )
+        return self.__class__( *(c.item() for c in
+                                 numpy.divide(self._coords,
+                                              float(scalar))[:3]) )
     
-    def __div__( self, scalar ):
-        """a / n <==> a.divide( n )
-        """
-        return self.divide( scalar )
-
     def normalize( self ):
         """return new vector with same heading and magnitude of 1.0
         """

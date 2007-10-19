@@ -24,6 +24,26 @@ def angle_axis( angle, u, v, w ):
          [0, 0, 0, 1]],
         'd' )
 
+def translate_matrix( x, y, z ):
+    """builds 4d numpy matrix for translation given distance in x, y and z
+    """
+    return matrix(
+        [[1, 0, 0, x],
+         [0, 1, 0, y],
+         [0, 0, 1, z],
+         [0, 0, 0, 1]],
+        'd' )
+
+def scale_matrix( x, y, z ):
+    """builds 4d numpy matrix for non-uniform scaling in x, y and z
+    """
+    return matrix(
+        [[x, 0, 0, 0],
+         [0, y, 0, 0],
+         [0, 0, z, 0],
+         [0, 0, 0, 1]],
+        'd' )
+
 def roll( angle ):
     """builds 4d numpy matrix for rotation about x axis
     """

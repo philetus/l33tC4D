@@ -45,7 +45,8 @@ class VectorX( object ):
     def dot( self, vector ):
         """returns scalar dot product of this vector and given vector
         """
-        return numpy.dot( self._coords.transpose(), vector._coords )
+        return numpy.dot( self._coords[:3].transpose(),
+                          vector._coords[:3] ).item()
 
     def cross( self, vector ):
         """cross this vector with given vector and return as new vector
@@ -101,7 +102,7 @@ class VectorX( object ):
     ###
     
     def _get_magnitude( self ):
-        return numpy.sqrt( numpy.sum(self._coords**2) )
+        return numpy.sqrt( sum(c**2 for c in self) )
 
     ###
     ### properties

@@ -8,7 +8,7 @@ class Gui( object ):
 
     def __init__( self ):
         # start gtk threads
-        gtk.threads_init()
+        gtk.gdk.threads_init()
 
         # holds gtk main loop thread
         self._gtk_thread = None
@@ -23,7 +23,7 @@ class Gui( object ):
     def _start_gtk( self ):
         print "starting gtk main loop"
         
-        gtk.threads_enter()
+        gtk.gdk.threads_enter()
         try:
             gtk.main()
         finally:
@@ -52,7 +52,7 @@ class Gui( object ):
             window.destroy()
         
         # stop gtk main loop
-        gtk.threads_enter()
+        gtk.gdk.threads_enter()
         try:
             gtk.main_quit()
         finally:

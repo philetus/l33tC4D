@@ -7,6 +7,7 @@ class Vector3:
     """3 dimensional vector using numpy library to implement storage and methods
     """
     __slots__ = "_coords" # instances only store numpy coords matrix
+    EPSILON = 0.001 # +/- to be considered equal
 
     def __init__( self, seed=(1, 0, 0) ):
         """store x, y and z coordinates in numpy matrix
@@ -74,7 +75,7 @@ class Vector3:
         """divide this vector by given scalar
         """
         # check we aren't dividing by 0
-        if scalar == 0.0:
+        if abs(scalar) < self.EPSILON:
             raise ZeroDivisionError( "can't divide vector by zero!" )
 
         self._coords[:3] /= scalar
@@ -87,7 +88,7 @@ class Vector3:
     def normalize( self ):
         """set magnitude to 1.0; raises ZeroDivisionError if magnitude is 0
         """
-        self.magnitude = 1.0
+        self._set_magnitude( 1.0 )
         return self
 
     def project( self, vector3 ):
@@ -104,7 +105,7 @@ class Vector3:
         # make sure neither vector is zero-length
         sm = self.magnitude
         vm = vector3.magnitude
-        if sm == 0.0 or vm == 0.0:
+        if abs(sm) < self.EPSILON or abs(vm) < self.EPSILON:
             raise ZeroDivisionError(
                 "can't calculate angle between zero-length vectors!" )
         
@@ -153,11 +154,11 @@ class Vector3:
         return math.sqrt( sum(self.array**2) )
     def _set_magnitude( self, scalar ):
         # assure magnitude is not zero
-        magnitude = self.magnitude
-        if magnitude == 0.0:
+        m = self._get_magnitude()
+        if m < self.EPSILON:
             raise ZeroDivisionError(
                 "can't adjust magnitude of zero-length vector!" )
-        self._coords[:3] *= scalar / magnitude
+        self._coords[:3] *= scalar / m
 
     def _get_array( self ):
         return self._coords[:3].A1

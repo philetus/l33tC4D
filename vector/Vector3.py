@@ -1,12 +1,10 @@
 from numpy import matrix, dot, cross
 import math
 
-from Matrix3 import Matrix3
-
 class Vector3:
     """3 dimensional vector using numpy library to implement storage and methods
     """
-    __slots__ = "_coords" # instances only store numpy coords matrix
+    __slots__ = [ "_coords" ] # instances only store numpy coords matrix
     EPSILON = 0.001 # +/- to be considered equal
 
     def __init__( self, seed=(1, 0, 0) ):
@@ -88,7 +86,7 @@ class Vector3:
     def normalize( self ):
         """set magnitude to 1.0; raises ZeroDivisionError if magnitude is 0
         """
-        self._set_magnitude( 1.0 )
+        self.set_magnitude( 1.0 )
         return self
 
     def project( self, vector3 ):
@@ -114,22 +112,49 @@ class Vector3:
         try:
             return math.degrees( math.acos(self.dot(vector3) / (sm * vm)) )
         except ValueError:
+            # test whether direction is same or opposite
+            if Vector3( self ).add( vector3 ).magnitude < sm:
+                return 180.0
             return 0.0
         
     def rotate( self, degrees, axis ):
         """rotate this vector around given axis vector and return as new vector
         """
-        # get rotation matrix
-        rotation = Matrix3().rotate( degrees, axis )
+        # copy and normalize axis
+        axis = Vector3( axis ).normalize()
 
-        # transform coords with rotation matrix and return self
-        return self.transform( rotation )
+        # get stub of self projected onto axis
+        stub = Vector3( self ).project( axis )
+
+        # subtract stub from self
+        self -= stub
+
+        # get new vector crossed with axis
+        crossed = Vector3( axis ).cross( self )
+
+        # trigify self and crossed to account for rotation
+        crossed *= math.sin( math.radians(degrees) )
+        self *= math.cos( math.radians(degrees) )
+
+        # add crossed and stub components to self
+        self += crossed
+        self += stub
+        
+        return self
 
     def transform( self, matrix3 ):
         """transform vector with 4x4 matrix
         """
-        self._coords =  matrix3._m * self._coords
+        self._coords =  matrix3._matrix * self._coords
         return self
+
+    def set_magnitude( self, scalar ):
+        # assure magnitude is not zero
+        m = self._get_magnitude()
+        if m < self.EPSILON:
+            raise ZeroDivisionError(
+                "can't adjust magnitude of zero-length vector!" )
+        self._coords[:3] *= scalar / m
 
     ###
     ### getter and setter methods for properties
@@ -148,17 +173,11 @@ class Vector3:
     def _get_z( self ):
         return self._coords[2,0]
     def _set_z( self, value ):
+        print "setting z"
         self._coords[2,0] = value
         
     def _get_magnitude( self ):
         return math.sqrt( sum(self.array**2) )
-    def _set_magnitude( self, scalar ):
-        # assure magnitude is not zero
-        m = self._get_magnitude()
-        if m < self.EPSILON:
-            raise ZeroDivisionError(
-                "can't adjust magnitude of zero-length vector!" )
-        self._coords[:3] *= scalar / m
 
     def _get_array( self ):
         return self._coords[:3].A1
@@ -167,10 +186,9 @@ class Vector3:
     ### properties
     ###
     
-    x = property( fget=_get_x, fset=_set_x, doc="x coordinate of vector" )
-    y = property( fget=_get_y, fset=_set_y, doc="y coordinate of vector" )
-    z = property( fget=_get_z, fset=_set_z, doc="z coordinate of vector" )
-    magnitude = property( fget=_get_magnitude, fset=_set_magnitude,
-                          doc="length of vector" )
-    array = property( fget=_get_array, doc="coords as flat array" )
+    x = property( _get_x, doc="x coordinate of vector" )
+    y = property( _get_y, doc="y coordinate of vector" )
+    z = property( _get_z, doc="z coordinate of vector" )
+    magnitude = property( _get_magnitude, doc="length of vector" )
+    array = property( _get_array, doc="coords as flat array" )
 

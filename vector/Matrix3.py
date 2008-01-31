@@ -1,5 +1,6 @@
 from numpy import eye, matrix
 import math
+from Vector3 import Vector3
 
 class Matrix3:
     """4x4 matrix for transformations of 3d vectors
@@ -13,8 +14,9 @@ class Matrix3:
         if seed is None:
             self._matrix = matrix( eye(4, 4) )
         else:
-            self._matrix = matrix( seed )
-            if self._matrix.shape != (4, 4):
+            try:
+                self._matrix = matrix( list(seed), 'd' ).reshape( 4, 4 )
+            except ValueError:
                 raise ValueError( "seed value doesn't give 4x4 matrix: '%s'"
                                   % str(seed) )
 
@@ -36,6 +38,9 @@ class Matrix3:
         """
         # generate rotation matrix
         magnitude = axis.magnitude
+        if abs( magnitude ) < self.EPSILON:
+            raise ZeroDivisionError(
+                "can't rotate around zero magnitude vector: %s!" % str(axis) )
         x, y, z = (coord / magnitude for coord in axis)
         c = math.cos( math.radians(degrees) )
         s = math.sin( math.radians(degrees) )
@@ -98,7 +103,7 @@ class Matrix3:
                 yield self._matrix[i, j]
 
     def _get_position( self ):
-        return tuple( self._matrix[:3,3].A1 )
+        return Vector3( self._matrix[:3,3].A1 )
 
     def _get_angle_axis( self ):
         # from http://en.wikipedia.org/wiki/Axis_angle
@@ -106,32 +111,21 @@ class Matrix3:
         t = self._matrix[:3,:3].trace().item()
         angle = math.acos((t - 1) / 2)
 
-        # if angle is zero return zeros for axes, too
+        # if angle is zero return zeros for axis, too
         if abs(angle) < self.EPSILON:
-            return( 0.0, 0.0, 0.0, 0.0 )
+            return( 0.0, Vector3((0.0, 0.0, 0.0)) )
 
         # calculate raw axis
-        axis = [ self._matrix[2,1] - self._matrix[1,2],
-                 self._matrix[0,2] - self._matrix[2,0],
-                 self._matrix[1,0] - self._matrix[0,1] ]
-        print "raw axis:", str(axis)
-
-        m = math.sqrt( sum(c**2 for c in axis) )
-        print "magnitude:", str(m)
-
-        # calculate coefficient for unit axis
-        #m = 1 / ( 2 * math.sin(angle) )
-        #print "coefficient:", str(m)
+        axis = Vector3( (self._matrix[2,1] - self._matrix[1,2],
+                         self._matrix[0,2] - self._matrix[2,0],
+                         self._matrix[1,0] - self._matrix[0,1]) ).normalize()
 
         # convert angle to degrees
         angle = math.degrees( angle )
-
-        # multiply raw axis by magnitude coefficient to get unit axis
-        x, y, z = ( c / m for c in axis )
          
-        return angle, x, y, z
+        return angle, axis
         
     position = property( fget=_get_position,
-                         doc="current (x, y, z) position of matrix" )
+                         doc="current (x, y, z) position vector of matrix" )
     angle_axis = property( fget=_get_angle_axis,
                            doc="current (a, x, y, z) rotation of matrix" )

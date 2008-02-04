@@ -16,7 +16,7 @@ class Matrix3:
         else:
             try:
                 self._matrix = matrix( list(seed), 'd' ).reshape( 4, 4 )
-            except ValueError:
+            except (ValueError, TypeError):
                 raise ValueError( "seed value doesn't give 4x4 matrix: '%s'"
                                   % str(seed) )
 
@@ -92,6 +92,12 @@ class Matrix3:
         self._matrix *= matrix3._matrix
         return self
 
+    def invert( self ):
+        """invert transformation matrix
+        """
+        self._matrix = self._matrix.I
+        return self
+    
     def __imul__( self, matrix3 ):
         return self.transform( matrix3 )
 

@@ -1,57 +1,160 @@
-import numpy
-from math import degrees, radians, cos, sin, asin, atan2
+from numpy import matrix, dot, cross
+import math
 
-from VectorX import VectorX
-from matrices import angle_axis
-
-class Vector3( VectorX ):
+class Vector3:
     """3 dimensional vector using numpy library to implement storage and methods
     """
-    # instances only store coords array
-    __slots__ = "_coords"
+    __slots__ = [ "_coords" ] # instances only store numpy coords matrix
+    EPSILON = 0.001 # +/- to be considered equal
 
-    def __init__( self, x=0.0, y=0.0, z=0.0, lat=None, lon=None, r=1.0 ):
-        """store x, y and z coordinates in numpy array
-        
-           if latitude and longitude are given convert to cartesian coords
+    def __init__( self, seed=(1, 0, 0) ):
+        """store x, y and z coordinates in numpy matrix
         """
-        if lat is not None and lon is not None:
-            lat = radians( lat )
-            lon = radians( lon )
-            x = r * cos( lat ) * cos( lon )
-            y = r * cos( lat ) * sin( lon )
-            z = r * sin( lat )
-        self._coords = numpy.matrix( [[x], [y], [z], [1.]], 'd' )
+        x, y, z = seed
+        self._coords = matrix( [[x], [y], [z], [1.]], 'd' )
+
+    def __getitem__( self, index ):
+        return self._coords[index,0]
+
+    def __setitem__( self, index, value ):
+        self._coords[index,0] = value
 
     def __iter__( self ):
-        for coord in self._coords[:3]:
-            yield coord.item()
+        for coord in self.array:
+            yield coord
 
     def __repr__( self ):
         return "<vector3 x=%.3f y=%.3f z=%.3f />" % tuple( self )
     
-    def rotate( self, angle, axis ):
-        """rotate this vector around given axis and return as new vector
-
-           axis is another vector3
-           angle is in degrees
+    def add( self, vector3 ):
+        """add given vector to this vector
         """
-        # get angle axis rotation matrix
-        rotation = angle_axis( float(angle), *axis )
-
-        # return new vector with rotated coords
-        return self.transform( rotation )
-
-    def transform( self, matrix ):
-        """transform vector with 4x4 matrix and return as new vector
+        self._coords[:3] += vector3._coords[:3]
+        return self
+    
+    def __iadd__( self, vector3 ):
+        """a += b <==> a.add( b )
         """
-        coords = self._coords.copy()
+        return self.add( vector3 )
 
-        # multiply vector with matrix
-        coords =  matrix * coords
+    def subtract( self, vector3 ):
+        """subtract given vector from this vector and return as new vector
+        """
+        self._coords[:3] -= vector3._coords[:3]
+        return self
 
-        # return new vector with transformed coords
-        return self.__class__( *(c.item() for c in coords[:3]) )
+    def __isub__( self, vector3 ):
+        """a -= b <==> a.subtract( b )
+        """
+        return self.subtract( vector3 )
+
+    def dot( self, vector3 ):
+        """returns scalar dot product of this vector and given vector
+        """
+        return dot( self._coords[:3].transpose(), vector3._coords[:3] ).item()
+
+    def cross( self, vector3 ):
+        """cross this vector with given vector
+        """
+        product = cross( self.array, vector3.array )
+        self._coords[:3] = matrix( product ).transpose()
+        return self
+
+    def multiply( self, scalar ):
+        """multiply this vector by given scalar
+        """
+        self._coords[:3] *= scalar
+        return self
+
+    def __imul__( self, scalar ):
+        return self.multiply( scalar )
+
+    def divide( self, scalar ):
+        """divide this vector by given scalar
+        """
+        # check we aren't dividing by 0
+        if abs(scalar) < self.EPSILON:
+            raise ZeroDivisionError( "can't divide vector by zero!" )
+
+        self._coords[:3] /= scalar
+
+        return self
+
+    def __idiv__( self, scalar ):
+        return self.divide( scalar )
+    
+    def normalize( self ):
+        """set magnitude to 1.0; raises ZeroDivisionError if magnitude is 0
+        """
+        self.set_magnitude( 1.0 )
+        return self
+
+    def project( self, vector3 ):
+        """project this vector onto given vector
+        """
+        self._coords[:3] = vector3._coords[:3] * ( self.dot(vector3)
+                                                   / vector3.magnitude**2 )
+        
+        return self
+    
+    def angle_to( self, vector3 ):
+        """return angle from this vector to given vector in degrees
+        """
+        # make sure neither vector is zero-length
+        sm = self.magnitude
+        vm = vector3.magnitude
+        if abs(sm) < self.EPSILON or abs(vm) < self.EPSILON:
+            raise ZeroDivisionError(
+                "can't calculate angle between zero-length vectors!" )
+        
+        # calculation will fail if vectors have same heading
+        # catch error and return zero
+        try:
+            return math.degrees( math.acos(self.dot(vector3) / (sm * vm)) )
+        except ValueError:
+            # test whether direction is same or opposite
+            if Vector3( self ).add( vector3 ).magnitude < sm:
+                return 180.0
+            return 0.0
+        
+    def rotate( self, degrees, axis ):
+        """rotate this vector around given axis vector and return as new vector
+        """
+        # copy and normalize axis
+        axis = Vector3( axis ).normalize()
+
+        # get stub of self projected onto axis
+        stub = Vector3( self ).project( axis )
+
+        # subtract stub from self
+        self -= stub
+
+        # get new vector crossed with axis
+        crossed = Vector3( axis ).cross( self )
+
+        # trigify self and crossed to account for rotation
+        crossed *= math.sin( math.radians(degrees) )
+        self *= math.cos( math.radians(degrees) )
+
+        # add crossed and stub components to self
+        self += crossed
+        self += stub
+        
+        return self
+
+    def transform( self, matrix3 ):
+        """transform vector with 4x4 matrix
+        """
+        self._coords =  matrix3._matrix * self._coords
+        return self
+
+    def set_magnitude( self, scalar ):
+        # assure magnitude is not zero
+        m = self._get_magnitude()
+        if m < self.EPSILON:
+            raise ZeroDivisionError(
+                "can't adjust magnitude of zero-length vector!" )
+        self._coords[:3] *= scalar / m
 
     ###
     ### getter and setter methods for properties
@@ -70,21 +173,22 @@ class Vector3( VectorX ):
     def _get_z( self ):
         return self._coords[2,0]
     def _set_z( self, value ):
+        print "setting z"
         self._coords[2,0] = value
+        
+    def _get_magnitude( self ):
+        return math.sqrt( sum(self.array**2) )
 
-    def _get_lat( self ):
-        return degrees( asin(self._coords[2,0] / self._get_magnitude()) )
-
-    def _get_lon( self ):
-        return degrees( atan2(self._coords[1,0], self._coords[0,0]) )
+    def _get_array( self ):
+        return self._coords[:3].A1
 
     ###
     ### properties
     ###
     
-    x = property( fget=_get_x, fset=_set_x, doc="x coordinate of vector" )
-    y = property( fget=_get_y, fset=_set_y, doc="y coordinate of vector" )
-    z = property( fget=_get_z, fset=_set_z, doc="z coordinate of vector" )
+    x = property( _get_x, doc="x coordinate of vector" )
+    y = property( _get_y, doc="y coordinate of vector" )
+    z = property( _get_z, doc="z coordinate of vector" )
+    magnitude = property( _get_magnitude, doc="length of vector" )
+    array = property( _get_array, doc="coords as flat array" )
 
-    lat = property( fget=_get_lat, doc="latitude of vector" )
-    lon = property( fget=_get_lon, doc="longitude of vector" )

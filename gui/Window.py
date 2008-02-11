@@ -128,7 +128,7 @@ class Window( object ):
 
             if not self.window.in_gtk_thread:
                 if not self.mark:
-                    gtk.threads_enter()
+                    gtk.gdk.threads_enter()
                 self.window.in_gtk_thread = True
                 self.really_leave = True
 
@@ -146,7 +146,7 @@ class Window( object ):
                                         
                 self.window.in_gtk_thread = False
                 if not self.mark:
-                    gtk.threads_leave()
+                    gtk.gdk.threads_leave()
 
                 #print "leaving gtk thread"
                 

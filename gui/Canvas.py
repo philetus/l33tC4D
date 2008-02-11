@@ -29,6 +29,7 @@ class Canvas( Window ):
         super( Canvas, self ).__init__( gui=gui )
         
         # set up drawing area widget
+        self._drawing_area = None
         gtk_thread = self.GTK_Thread( self )
         try:
             self._init_drawing_area()
@@ -83,10 +84,10 @@ class Canvas( Window ):
         try:
             # get a new cairo context from the drawing area
             context = self._drawing_area.window.cairo_create()
-            
+
             # set a clip region for the expose event
             context.rectangle( event.area.x, event.area.y,
-                                    event.area.width, event.area.height)
+                               event.area.width, event.area.height)
             context.clip()
 
             # call draw handler to draw contents of canvas to cairo context
@@ -149,14 +150,14 @@ class Canvas( Window ):
         self._drawing_area = gtk.DrawingArea()
 
         # set up callbacks
-	self._drawing_area.set_events( gtk.gdk.POINTER_MOTION_MASK |
+        self._drawing_area.set_events( gtk.gdk.POINTER_MOTION_MASK |
                                        gtk.gdk.BUTTON_RELEASE_MASK |
                                        gtk.gdk.BUTTON_PRESS_MASK )
         self._drawing_area.connect( "expose_event", self._on_expose )
-	self._drawing_area.connect( "configure_event", self._on_configure )
-	self._drawing_area.connect( "motion_notify_event", self._on_motion )
-	self._drawing_area.connect( "button_press_event", self._on_press )
-	self._drawing_area.connect( "button_release_event", self._on_release )
+        self._drawing_area.connect( "configure_event", self._on_configure )
+        self._drawing_area.connect( "motion_notify_event", self._on_motion )
+        self._drawing_area.connect( "button_press_event", self._on_press )
+        self._drawing_area.connect( "button_release_event", self._on_release )
 
         # add drawing area to window
         self._window.add( self._drawing_area )

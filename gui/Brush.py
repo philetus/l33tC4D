@@ -1,3 +1,5 @@
+import pango
+
 class Brush( object ):
     """brush to draw to canvas
 
@@ -28,10 +30,13 @@ class Brush( object ):
     ROUND = 1
 
     def __init__( self, context, size ):
-        self._context = context # cairo context to draw to
+        # cairo context to draw to
+        self._context = context 
 
         # pango text layout for drawing text paths
-        self._layout = None
+        self._layout = self._context.create_layout()
+        self._font = pango.FontDescription( "sans 16" )
+        self._layout.set_font_description( self._font )
 
         # offsets for masked origins
         self._offset_stack = [((0, 0), size)] 
@@ -102,6 +107,12 @@ class Brush( object ):
         """
         self._context.close_path()
 
+    def text_path( self ):
+        """add current text to path starting at upper left
+        """
+        self._context.layout_path( self._layout )
+        
+
     def fill_path( self ):
         """fill current path with current brush settings
         """
@@ -169,7 +180,7 @@ class Brush( object ):
                 "can't generate path: some but not all control points given" )
 
         return True
-        
+
     ###
     ### private getter and setter methods for brush properties
     ###
@@ -199,13 +210,13 @@ class Brush( object ):
         raise NotImplementedError()
 
     def _get_text( self ):
-        return None
-##        if self._layout is None:
-##            return None
-##        return self._layout.
+        return _layout.get_text()
     
-    def _set_text( self, name ):
-        raise NotImplementedError()
+    def _set_text( self, string ):
+        self._layout.set_text( string )
+
+    def _get_text( self ):
+        return self._layout.get_text()
 
     def _set_font( self, name ):
         raise NotImplementedError()
@@ -213,11 +224,29 @@ class Brush( object ):
     def _get_font( self ):
         raise NotImplementedError()
 
-    def _set_font_size( self, name ):
-        raise NotImplementedError()
+    def _set_font_family( self, family ):
+        self._font.set_family( family )
+        self._layout.set_font_description( self._font )
+
+    def _get_font_family( self, family ):
+        return self._font.get_family()
+
+    def _set_font_weight( self, weight ):
+        self._font.set_weight( int(weight * 800) + 100 )
+        self._layout.set_font_description( self._font )
+
+    def _get_font_weight( self, family ):
+        return (self._font.get_weight() - 100) / 800.0
+
+    def _set_font_size( self, px ):
+        self._font.set_size( px * pango.SCALE )
+        self._layout.set_font_description( self._font )
 
     def _get_font_size( self ):
-        raise NotImplementedError()
+        return self._font.get_size() / pango.SCALE
+
+    def _get_text_size( self ):
+        return self._layout.get_pixel_size()
 
     def _get_position( self ):
         return self._context.get_current_point()
@@ -237,14 +266,18 @@ class Brush( object ):
                      doc="diameter of brush in pixels" )
     shape = property( _get_shape, _set_shape,
                       doc="shape of brush, Brush.SQUARE or Brush.ROUND" )
-##    text = property( _get_text, _set_text,
-##                     doc="text to use for text path" )
-##    text_size = property( _get_text_size, _set_text_size,
-##                          doc="(width, height) of current text" )
-##    font = property( _get_font, _set_font,
-##                     doc="font to use to generate font paths" )
-##    font_size = property( _get_font_size, _set_font_size,
-##                          doc="font size to use to generate font paths" )
+    text = property( _get_text, _set_text,
+                     doc="text to use for text path" )
+    text_size = property( _get_text_size,
+                          doc="(width, height) of current text" )
+    font = property( _get_font, _set_font,
+                     doc="font to use to generate font paths" )
+    font_size = property( _get_font_size, _set_font_size,
+                          doc="font size to use to generate font paths" )
+    font_family = property( _get_font_family, _set_font_family,
+                          doc="family can be sans | serif | mono" )
+    font_weight = property( _get_font_weight, _set_font_weight,
+                          doc="font weight in range 0.0-1.0" )
     position = property( _get_position,
                          doc="current brush position" )
     mask_size = property( _get_mask_size,

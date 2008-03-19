@@ -130,8 +130,13 @@ class Matrix3:
         angle = math.degrees( angle )
          
         return angle, axis
-        
+
+    def _get_gl( self ):
+        # without copy opengl ignores transpose
+        return self._matrix.A.T.copy()
+    
     position = property( fget=_get_position,
                          doc="current (x, y, z) position vector of matrix" )
     angle_axis = property( fget=_get_angle_axis,
                            doc="current (a, x, y, z) rotation of matrix" )
+    gl = property( fget=_get_gl, doc="matrix data massaged for opengl" )

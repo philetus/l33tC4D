@@ -9,3 +9,7 @@ class Shadow:
 
         # set of shadow nodes
         self.nodes = set()
+
+    def __repr__( self ):
+        return "<shadow %s>" % str(self.zone)
+

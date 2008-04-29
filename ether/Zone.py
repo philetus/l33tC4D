@@ -4,8 +4,8 @@ class Zone:
     # intersection codes
     CONTAINED, CONTAINS, CROSSES, CLIPS = 0, 1, 2, 3
 
-    solid = False # insertion will fail if it causes two solids to intersect 
-    visible = False # visible zones are returned by a get intersection call
+    SOLID = False # insertion will fail if it causes two solids to intersect 
+    VISIBLE = False # visible zones are returned by a get intersection call
 
     def __init__( self, parent=None ):
         self.parent = parent
@@ -21,7 +21,7 @@ class Zone:
            returns a list of tuples for each intersecting (sub-)zone:
                <zone> intersecting (sub-)zone
                <intersection> contained|contains|crosses|clips
-               <normal> (u, v, w) coords given if zone clips box               
+               <normal> (u, v, w) coords given if zone clips box into two            
         """
         raise NotImplementedError()
 
@@ -33,7 +33,7 @@ class Zone:
         
         return False
 
-    def ignore_intersection( self, zone, position, scale ):
+    def ignore_intersection( self, zone ):
         """return true to ignore intersection with given zone
         """
         return False

@@ -7,9 +7,9 @@ class Ether_Demon( Thread ):
     """thread-safe interface to manage zones in ether
     """
     REQUESTS = [ "insert", "remove", "move", "get_intersections" ]
-    COLLISION_RESOLUTION = 1 # scale to resolve solid insertion to
+    COLLISION_RESOLUTION = -1 # scale to resolve solid insertion to
 
-    def init( self ):
+    def __init__( self ):
         Thread.__init__( self )
 
         # root node of ether octree
@@ -128,29 +128,29 @@ class Ether_Demon( Thread ):
 
     def _insert( self, zone, responses ):
         response = None
-        try:
+        #try:
             
-            # check that zone does not already have a shadow in index
-            if zone in self.shadows:
-                raise AssertionError(
-                    "insert failed: zone %s already in ether" % str(zone)) )
+        # check that zone does not already have a shadow in index
+        if zone in self.shadows:
+            raise AssertionError(
+                "insert failed: zone %s already in ether" % str(zone) )
 
-            # grow ether if necessary
-            self._grow_to_bounds( *zone.get_bounds() )
+        # grow ether if necessary
+        self._grow_to_bounds( *zone.get_bounds() )
 
-            # create shadow for zone
-            self.shadows[zone] = Shadow( zone )
+        # create shadow for zone
+        self.shadows[zone] = Shadow( zone )
 
-            # attempt to insert zone's shadow into top ether node
-            response = self.top.insert( shadow )
+        # attempt to insert zone's shadow into top ether node
+        response = self.top.insert( self.shadows[zone] )
 
-            # if insertion fails remove shadow
-            if response is not True:
-                self._wipe_shadow( shadow )
-                del self.shadows[zone]
+        # if insertion fails remove shadow
+        if response is not True:
+            self._wipe_shadow( shadow )
+            del self.shadows[zone]
 
-        except (Exception, e):
-            response = e
+        #except Exception, e:
+        #    response = e
 
         # place response on queue
         responses.put( response )
@@ -165,7 +165,7 @@ class Ether_Demon( Thread ):
             # remove shadow from index
             del self.shadows[zone]
 
-        except (Exception, e ):
+        except Exception, e:
             response = e
 
         # put response on queue to signal completion
@@ -209,7 +209,7 @@ class Ether_Demon( Thread ):
                         "final position inconsistent with motion: zone %s"
                         % str(zone) )
                     
-        except (Exception, e ):
+        except Exception, e:
             response = e
 
         responses.put( response )
@@ -228,7 +228,7 @@ class Ether_Demon( Thread ):
 
             node._get_intersections( shadow, response )
             
-        except (Exception, e):
+        except Exception, e:
             response = e
             
         responses.put( response )
@@ -258,7 +258,7 @@ class Ether_Demon( Thread ):
             # update shadow coords when done
             grew = True
 
-        # update shadow coords if top grew
+        # wipe cached coords if top grew
         if grew:
-            self.top.update_shadow_coords()
+            self.top.wipe_coords()
 

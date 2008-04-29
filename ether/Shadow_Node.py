@@ -19,4 +19,10 @@ class Shadow_Node:
 
         # zone surface normal at intersection
         self.normal = normal
+
+    def __repr__( self ):
+        return "<shadow node %s %d %s>" % (
+            str(self.get_coord()), self.intersection, str(self.zone) )
     
+    def get_coord( self ):
+        return self.ether.get_coord()

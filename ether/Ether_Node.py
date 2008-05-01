@@ -49,6 +49,18 @@ class Ether_Node:
     def __iter__( self ):
         return self.children.itervalues()
 
+    def print_tree( self, indent="" ):
+        indent = "\t" + indent
+
+        # print shadows
+        for node in self.shadows.itervalues():
+            print "%s*%s" % (indent, str(node) )
+
+        # print children
+        for name in sorted( self.children ):
+            print "%s%s %s" % (indent, str(name), str(self.children[name]) )
+            self.children[name].print_tree( indent )
+        
     ###
     ### public ether node interface should only be accessed by its demon
     ###
@@ -88,15 +100,14 @@ class Ether_Node:
     def _insert_solid( self, shadow, zone, intersection, normal=None ):
         print "\ninserting %s into ether at %s" % (str(zone), str(self.get_coord()) )
 
+        # there is already a shadow containing this node, fail
+        for local_shadow in self.shadows.itervalues():
+            if local_shadow.intersection == self.CONTAINS:
+                return False
+
         # check for intersecting shadows:
         intersecting_shadows = self.find_shadows(
             solid=True, test=shadow.zone.ignore_intersection )
-
-        # if any of the intersecting shadows contain this node this
-        # shadow collides with it, fail
-        for intersecting_shadow in intersecting_shadows:
-            if intersecting_shadow.intersection == self.CONTAINS:
-                return False
 
         # if this shadow contains this ether node and there is another
         # intersecting shadows this shadow collides with it, fail
@@ -173,6 +184,15 @@ class Ether_Node:
 
         # remove shadow node from this ether node and parent shadow
         self.purge_shadow_node( shadow_node )
+
+    def suck( self ):
+        """recursively garbage collect empty leaf nodes
+        """
+        if not (self.children or self.shadows):
+            parent = self.parent
+            self.parent = None
+            del parent.children[self.name]
+            parent.suck()        
 
     def purge_shadow_node( self, shadow_node ):
         """remove a child node from ether and from self

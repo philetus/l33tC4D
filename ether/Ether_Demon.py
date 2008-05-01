@@ -36,6 +36,10 @@ class Ether_Demon( Thread ):
                 raise ValueError( "unrecognized request type: '%s'" % request )
             self.__getattribute__( "_" + request )( **args )
 
+    def print_tree( self ):
+        print self.top
+        self.top.print_tree()
+
     ###
     ### public methods hide use of queue to assure requests are handled one
     ### at a time
@@ -80,6 +84,8 @@ class Ether_Demon( Thread ):
         # if response is an error raise it
         if isinstance( response, Exception ):
             raise response
+
+        return response
         
     def move( self, zone, path ):
         """move zone through ether by vector
@@ -139,15 +145,16 @@ class Ether_Demon( Thread ):
         self._grow_to_bounds( *zone.get_bounds() )
 
         # create shadow for zone
-        self.shadows[zone] = Shadow( zone )
+        shadow = Shadow( zone )
 
         # attempt to insert zone's shadow into top ether node
-        response = self.top.insert( self.shadows[zone] )
+        response = self.top.insert( shadow )
 
-        # if insertion fails remove shadow
+        # if insertion fails remove shadow, otherwise add it to shadow index
         if response is not True:
             self._wipe_shadow( shadow )
-            del self.shadows[zone]
+        else:
+            self.shadows[zone] = shadow
 
         #except Exception, e:
         #    response = e
@@ -157,16 +164,16 @@ class Ether_Demon( Thread ):
 
     def _remove( self, zone, responses ):
         response = True
-        try:
+        #try:
 
-            # call remove shadow to do the dirty in the ether
-            self._wipe_shadow( zone )
+        # call remove shadow to do the dirty in the ether
+        self._wipe_shadow( self.shadows[zone] )
 
-            # remove shadow from index
-            del self.shadows[zone]
+        # remove shadow from index
+        del self.shadows[zone]
 
-        except Exception, e:
-            response = e
+        #except Exception, e:
+        #    response = e
 
         # put response on queue to signal completion
         responses.put( response )
@@ -238,7 +245,19 @@ class Ether_Demon( Thread ):
     ###
 
     def _wipe_shadow( self, shadow ):
-        raise NotImplementedError()
+        # remove shadow from each ether node it touches and garbage
+        # collect newly empty nodes
+        for shadow_node in tuple( shadow.nodes ):
+
+            # remove shadow node from shadow
+            shadow.nodes.discard( shadow_node )        
+
+            # remove from ether node
+            ether_node = shadow_node.ether
+            ether_node.purge_shadow_node( shadow_node )
+
+            # garbage collect ether node if it is empty now
+            ether_node.suck()
 
     def _grow_to_bounds( self, bmin, bmax ):
         node = self.top

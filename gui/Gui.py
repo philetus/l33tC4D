@@ -1,4 +1,5 @@
 import gtk
+gtk.set_interactive(False)
 import time
 from threading import Thread, Lock
 

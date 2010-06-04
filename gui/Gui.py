@@ -27,7 +27,7 @@ class Gui( object ):
         try:
             gtk.main()
         finally:
-            gtk.threads_leave()
+            gtk.gdk.threads_leave()
 
         print "stopped gtk main loop"
 
@@ -53,6 +53,6 @@ class Gui( object ):
         try:
             gtk.main_quit()
         finally:
-            gtk.threads_leave()
+            gtk.gdk.threads_leave()
             
 

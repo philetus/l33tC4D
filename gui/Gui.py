@@ -45,7 +45,8 @@ class Gui( object ):
         """
         
         # kill all windows
-        for window in self._windows:
+        while self._windows:
+            window = self._windows.pop()
             window.destroy()
         
         # stop gtk main loop

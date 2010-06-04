@@ -17,7 +17,6 @@ class Gui( object ):
         self._windows = set()
 
         # locks
-        self.window_lock = Lock()
         self.gl_lock = Lock()
 
     def _start_gtk( self ):
@@ -32,9 +31,7 @@ class Gui( object ):
         print "stopped gtk main loop"
 
     def add_window( self, window ):
-        self.window_lock.acquire()
         self._windows.add( window )
-        self.window_lock.release()
 
     def start( self ):
         """start gui rendering loop
@@ -45,7 +42,6 @@ class Gui( object ):
     def stop( self ):
         """stop gui rendering loop and close all windows
         """
-        self.window_lock.acquire()
         
         # kill all windows
         for window in self._windows:
@@ -58,4 +54,4 @@ class Gui( object ):
         finally:
             gtk.threads_leave()
             
-        self.window_lock.release()
+
